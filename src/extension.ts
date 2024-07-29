@@ -1,6 +1,9 @@
+// @ts-nocheck
+
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as jsdoc from 'jsdoc-api';
 
 export function activate(context: vscode.ExtensionContext) {
   let disposable = vscode.commands.registerCommand('extension.toTable', async (uri: vscode.Uri) => {
@@ -24,15 +27,15 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function generateMarkdownTable(folderPath: string): Promise<string> {
-  const tableHeader = generateTableHeader(folderPath);
-  const tableRows = await getFileRows(folderPath, folderPath);
+  const maxDepth = getMaxDepth(folderPath);
+  const tableHeader = generateTableHeader(maxDepth);
+  const tableRows = await getFileRows(folderPath, folderPath, maxDepth);
   return `${tableHeader}${tableRows}`;
 }
 
-function generateTableHeader(folderPath: string): string {
-  const maxDepth = getMaxDepth(folderPath);
-  let header = '| ' + Array.from({ length: maxDepth }, (_, i) => `Path${i + 1}`).join(' | ') + ' | File Name | Description | Etc |\n';
-  header += '| ' + Array.from({ length: maxDepth }, () => '--------').join(' | ') + ' | --------- | ----------- | --- |\n';
+function generateTableHeader(maxDepth: number): string {
+  let header = '| ' + Array.from({ length: maxDepth }, (_, i) => `Path${i + 1}`).join(' | ') + ' | File Name | 설명 | Etc |\n';
+  header += '| ' + Array.from({ length: maxDepth }, () => '--------').join(' | ') + ' | --------- | ------ | --- |\n';
   return header;
 }
 
@@ -50,7 +53,7 @@ function getMaxDepth(folderPath: string): number {
   return getDepth(folderPath);
 }
 
-async function getFileRows(basePath: string, folderPath: string): Promise<string> {
+async function getFileRows(basePath: string, folderPath: string, maxDepth: number): Promise<string> {
   const files = fs.readdirSync(folderPath);
   let rows = '';
 
@@ -60,12 +63,11 @@ async function getFileRows(basePath: string, folderPath: string): Promise<string
     const stats = fs.statSync(filePath);
 
     if (stats.isDirectory()) {
-      // Process the directory recursively
-      rows += await getFileRows(basePath, filePath);
+      rows += await getFileRows(basePath, filePath, maxDepth);
     } else {
       const pathLevels = getPathLevels(relativePath);
       const description = await extractDescription(filePath);
-      const pathColumns = pathLevels.concat(Array.from({ length: getMaxDepth(basePath) - pathLevels.length }, () => '-')).join(' | ');
+      const pathColumns = pathLevels.concat(Array.from({ length: maxDepth - pathLevels.length }, () => '-')).join(' | ');
       rows += `| ${pathColumns} | ${file} | ${description} | |\n`;
     }
   }
@@ -74,13 +76,23 @@ async function getFileRows(basePath: string, folderPath: string): Promise<string
 }
 
 function getPathLevels(relativePath: string): string[] {
-  return relativePath.split(path.sep).filter(part => part !== '');
+  const parts = relativePath.split(path.sep);
+  return parts.slice(0, parts.length - 1);
 }
 
 async function extractDescription(filePath: string): Promise<string> {
-  const fileContent = fs.readFileSync(filePath, 'utf-8');
-  const descriptionMatch = fileContent.match(/@description\s+([^\n\r]+)/);
-  return descriptionMatch ? descriptionMatch[1].trim() : '';
+  try {
+    const docs = await jsdoc.explain({ files: filePath });
+    for (const doc of docs) {
+      if (doc.description) {
+        return doc.description;
+      }
+    }
+    return '';
+  } catch (err) {
+    console.error(`Error parsing JSDoc for file ${filePath}:`, err);
+    return '';
+  }
 }
 
 export function deactivate() {}
