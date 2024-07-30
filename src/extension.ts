@@ -1,9 +1,6 @@
-// @ts-nocheck
-
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as jsdoc from 'jsdoc-api';
 
 export function activate(context: vscode.ExtensionContext) {
   let disposable = vscode.commands.registerCommand('extension.toTable', async (uri: vscode.Uri) => {
@@ -27,20 +24,23 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function generateMarkdownTable(folderPath: string): Promise<string> {
-  const maxDepth = getMaxDepth(folderPath);
-  const tableHeader = generateTableHeader(maxDepth);
-  const tableRows = await getFileRows(folderPath, folderPath, maxDepth);
+  const tableHeader = generateTableHeader(folderPath);
+  const tableRows = await getFileRows(folderPath, folderPath);
   return `${tableHeader}${tableRows}`;
 }
 
-function generateTableHeader(maxDepth: number): string {
-  let header = '| ' + Array.from({ length: maxDepth }, (_, i) => `Path${i + 1}`).join(' | ') + ' | File Name | 설명 | Etc |\n';
-  header += '| ' + Array.from({ length: maxDepth }, () => '--------').join(' | ') + ' | --------- | ------ | --- |\n';
+function generateTableHeader(folderPath: string): string {
+  const maxDepth = getMaxDepth(folderPath);
+  const actualMaxDepth = Math.max(maxDepth, 1); // maxDepth가 0인 경우 최소 1로 설정
+
+  let header = '| ' + Array.from({ length: actualMaxDepth }, (_, i) => `Path${i + 1}`).join(' | ') + ' | File Name | Author | Description | Etc |\n';
+  header += '| ' + Array.from({ length: actualMaxDepth }, () => '--------').join(' | ') + ' | --------- | --------- | ----------- | --- |\n';
+  
   return header;
 }
 
 function getMaxDepth(folderPath: string): number {
-  const getDepth = (folderPath: string): number => {
+  const getDepth = (folderPath: string) => {
     return fs.readdirSync(folderPath).reduce((maxDepth, file) => {
       const filePath = path.join(folderPath, file);
       if (fs.statSync(filePath).isDirectory()) {
@@ -53,7 +53,7 @@ function getMaxDepth(folderPath: string): number {
   return getDepth(folderPath);
 }
 
-async function getFileRows(basePath: string, folderPath: string, maxDepth: number): Promise<string> {
+async function getFileRows(basePath: string, folderPath: string): Promise<string> {
   const files = fs.readdirSync(folderPath);
   let rows = '';
 
@@ -63,12 +63,13 @@ async function getFileRows(basePath: string, folderPath: string, maxDepth: numbe
     const stats = fs.statSync(filePath);
 
     if (stats.isDirectory()) {
-      rows += await getFileRows(basePath, filePath, maxDepth);
+      // Process the directory recursively
+      rows += await getFileRows(basePath, filePath);
     } else {
       const pathLevels = getPathLevels(relativePath);
-      const description = await extractDescription(filePath);
-      const pathColumns = pathLevels.concat(Array.from({ length: maxDepth - pathLevels.length }, () => '-')).join(' | ');
-      rows += `| ${pathColumns} | ${file} | ${description} | |\n`;
+      const { description, author } = await extractJsdoc(filePath);
+      const pathColumns = pathLevels.concat(Array.from({ length: getMaxDepth(basePath) - pathLevels.length }, () => '-')).join(' | ');
+      rows += `| ${pathColumns} | ${file} | ${author} | ${description} | |\n`;
     }
   }
 
@@ -76,23 +77,18 @@ async function getFileRows(basePath: string, folderPath: string, maxDepth: numbe
 }
 
 function getPathLevels(relativePath: string): string[] {
-  const parts = relativePath.split(path.sep);
-  return parts.slice(0, parts.length - 1);
+  return relativePath.split(path.sep).filter(part => part !== '');
 }
 
-async function extractDescription(filePath: string): Promise<string> {
-  try {
-    const docs = await jsdoc.explain({ files: filePath });
-    for (const doc of docs) {
-      if (doc.description) {
-        return doc.description;
-      }
-    }
-    return '';
-  } catch (err) {
-    console.error(`Error parsing JSDoc for file ${filePath}:`, err);
-    return '';
-  }
+async function extractJsdoc(filePath: string): Promise<{description: string, author: string}> {
+  const fileContent = fs.readFileSync(filePath, 'utf-8');
+  const descriptionMatch = fileContent.match(/@설명[ ]?:([^\n\r]+)/);
+  const authorMatch = fileContent.match(/@작성자[ ]?:([^\n\r]+)/);
+
+  return {
+    description:  descriptionMatch ? descriptionMatch[1].trim() : '-',
+    author:  authorMatch ? authorMatch[1].trim() : '-'
+  };
 }
 
 export function deactivate() {}
