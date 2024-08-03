@@ -59,7 +59,7 @@
     "commands": [
       {
         "command": "extension.toTable",
-        "title": "To Table"
+        "title": "Generate to Table"
       }
     ],
     "menus": {
@@ -71,5 +71,8 @@
         }
       ]
     }
+  },
+  "dependencies": {
+    "csv-writer": "^1.6.0"
   }
 }
