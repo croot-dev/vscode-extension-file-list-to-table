@@ -4,9 +4,8 @@ import { extractJsdoc, getMaxDepth } from './utils';
 
 export async function generateHtmlTable(folderPath: string, htmlFilePath: string): Promise<void> {
   const maxDepth = getMaxDepth(folderPath);
-  const actualMaxDepth = Math.max(maxDepth, 1); // maxDepth가 0인 경우 최소 1로 설정
 
-  const header = generateTableHeader(actualMaxDepth);
+  const header = generateTableHeader(maxDepth);
   const rows = await getFileRows(folderPath, folderPath, maxDepth);
   const htmlContent = `
     <html>
@@ -30,7 +29,11 @@ export async function generateHtmlTable(folderPath: string, htmlFilePath: string
 }
 
 function generateTableHeader(maxDepth: number): string {
-  let header = '<tr>' + Array.from({ length: maxDepth }, (_, i) => `<th>Path${i + 1}</th>`).join('') + '<th>File Name</th><th>Author</th><th>Description</th><th>Etc</th></tr>';
+  let header = '<tr>';
+  if (maxDepth > 0) {
+    header +=  Array.from({ length: maxDepth }, (_, i) => `<th>Path${i + 1}</th>`).join('');
+  }
+  header += '<th>File Name</th><th>Author</th><th>Description</th><th>Etc</th></tr>';
   return header;
 }
 

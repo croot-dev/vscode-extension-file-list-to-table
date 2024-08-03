@@ -41,15 +41,18 @@ async function getFileRows(basePath: string, folderPath: string, maxDepth: numbe
 
 export async function generateCsvTable(folderPath: string, csvFilePath: string): Promise<void> {
   const maxDepth = getMaxDepth(folderPath);
-  const actualMaxDepth = Math.max(maxDepth, 1); // maxDepth가 0인 경우 최소 1로 설정
 
-  const header = Array.from({ length: actualMaxDepth }, (_, i) => ({ id: `Path${i + 1}`, title: `Path${i + 1}` }))
-    .concat([
-      { id: 'FileName', title: 'File Name' },
-      { id: 'Author', title: 'Author' },
-      { id: 'Description', title: 'Description' },
-      { id: 'Etc', title: 'Etc' },
-    ]);
+  let header = [
+    { id: 'FileName', title: 'File Name' },
+    { id: 'Author', title: 'Author' },
+    { id: 'Description', title: 'Description' },
+    { id: 'Etc', title: 'Etc' },
+  ];
+  
+  if (maxDepth > 0) {
+    header = Array.from({ length: maxDepth }, (_, i) => ({ id: `Path${i + 1}`, title: `Path${i + 1}` }))
+      .concat(header);
+  }
 
   const csvWriter = createObjectCsvWriter({
     path: csvFilePath,

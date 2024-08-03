@@ -17,8 +17,8 @@ export function getMaxDepth(folderPath: string): number {
 
 export async function extractJsdoc(filePath: string): Promise<{description: string, author: string}> {
   const fileContent = fs.readFileSync(filePath, 'utf-8');
-  const descriptionMatch = fileContent.match(/@설명[ ]?:([^\n\r]+)/);
-  const authorMatch = fileContent.match(/@작성자[ ]?:([^\n\r]+)/);
+  const authorMatch = fileContent.match(/@(?:author)[ \t]*:?[ \t]*([^\n\r]+)/);
+  const descriptionMatch = fileContent.match(/@(?:description|desc)[ \t]*:?[ \t]*([^\n\r]+)/);
 
   return {
     description:  descriptionMatch ? descriptionMatch[1].trim() : '-',

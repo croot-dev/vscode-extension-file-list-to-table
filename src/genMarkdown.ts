@@ -20,9 +20,13 @@ async function getFileRows(basePath: string, folderPath: string, maxDepth: numbe
       rows += await getFileRows(basePath, filePath, maxDepth);
     } else {
       const pathLevels = getPathLevels(relativePath);
-      const {description, author } = await extractJsdoc(filePath);
+      const { description, author } = await extractJsdoc(filePath);
       const pathColumns = pathLevels.concat(Array.from({ length: maxDepth - pathLevels.length }, () => '-')).join(' | ');
-      rows += `| ${pathColumns} | ${file} | ${author} | ${description} | |\n`;
+      if (maxDepth > 0){
+        rows += `| ${pathColumns} | ${file} | ${author} | ${description} | |\n`;
+      } else {
+        rows += `| ${file} | ${author} | ${description} | |\n`;
+      }
     }
   }
 
@@ -30,8 +34,15 @@ async function getFileRows(basePath: string, folderPath: string, maxDepth: numbe
 }
 
 function generateTableHeader(maxDepth: number): string {
-  let header = '| ' + Array.from({ length: maxDepth }, (_, i) => `Path${i + 1}`).join(' | ') + ' | File Name | 작성자 | 설명 | Etc |\n';
-  header += '| ' + Array.from({ length: maxDepth }, () => '--------').join(' | ') + ' | --------- | -------- | ------ | --- |\n';
+  let header = "";
+  if(maxDepth > 0) {
+    header += `| ${Array.from({ length: maxDepth }, (_, i) => `Depth${i + 1}`).join(' | ')} `;
+  }
+  header += '| 파일명 | 작성자 | 설명 | Etc |\n';
+  if(maxDepth > 0) {
+    header += `| ${Array.from({ length: maxDepth }, () => '--------').join(' | ')} `;
+  }
+  header += '| --------- | -------- | ------ | --- |\n';
   return header;
 }
   

@@ -11,7 +11,7 @@ async function openFile(filePath: string) {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  let disposable = vscode.commands.registerCommand('extension.toTable', async (uri: vscode.Uri) => {
+  let disposable = vscode.commands.registerCommand('fileList2Table.generateTable', async (uri: vscode.Uri) => {
     if (!uri || !fs.lstatSync(uri.fsPath).isDirectory()) {
       vscode.window.showErrorMessage('Please select a folder.');
       return;
