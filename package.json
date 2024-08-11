@@ -33,18 +33,20 @@
       ]
     }
   },
-  "configuration": [
-    {
-      "title": "Title",
-      "properties": {
-        "file-tree-to-markdown-table.useJsdoc": {
-          "type": "boolean",
-          "default": true,
-          "description": "Use JSDoc format"
-        }
+  "configuration": {
+    "title": "File List to Table",
+    "properties": {
+      "fileListToTable.columns": {
+        "type": "object",
+        "default": {
+          "author": "작성자",
+          "description": "설명",
+          "etc": "기타"
+        },
+        "description": "Mapping of JSDoc tags to table column names"
       }
     }
-  ],
+  },
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "node esbuild.js",

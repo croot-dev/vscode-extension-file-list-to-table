@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { generateMarkdownTable } from './genMarkdown';
-import { generateCsvTable } from './genCsv';
+import { generateCsv } from './genCsv';
 import path from 'path';
 import { generateHtmlTable } from './genHtml';
 
@@ -34,7 +34,7 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     } else if (fileType === 'CSV') {
       const csvFilePath = path.join(folderPath, 'folder_structure.csv');
-      await generateCsvTable(folderPath, csvFilePath);
+      await generateCsv(folderPath, csvFilePath);
       await openFile(csvFilePath);
       return;
     } else if (fileType === 'HTML') {

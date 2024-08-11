@@ -1,65 +1,67 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { createObjectCsvWriter } from 'csv-writer';
-import { extractJsdoc, getMaxDepth } from './utils';
+import { extractJsdoc, getColumns, getMaxDepth } from "./utils";
 
-function getPathLevels(relativePath: string, maxDepth: number): any {
+function getPathLevels(relativePath: string): string[] {
   const parts = relativePath.split(path.sep);
-  const pathLevels: any = {};
-  parts.slice(0, parts.length - 1).forEach((part, index) => {
-    pathLevels[`Path${index + 1}`] = part;
-  });
-
-  for (let i = parts.length - 1; i < maxDepth; i++) {
-    pathLevels[`Path${i + 1}`] = '-';
-  }
-
-  return pathLevels;
+  return parts.slice(0, parts.length - 1);
 }
 
-async function getFileRows(basePath: string, folderPath: string, maxDepth: number): Promise<any[]> {
+async function getFileRows(basePath: string, folderPath: string, maxDepth: number): Promise<string[]> {
   const files = fs.readdirSync(folderPath);
-  let rows: any[] = [];
+  const rows: string[] = [];
 
   for (const file of files) {
     const filePath = path.join(folderPath, file);
-    const relativePath = path.relative(basePath, filePath);
     const stats = fs.statSync(filePath);
 
     if (stats.isDirectory()) {
-      rows = rows.concat(await getFileRows(basePath, filePath, maxDepth));
+      rows.push(...await getFileRows(basePath, filePath, maxDepth));
     } else {
-      const pathLevels = getPathLevels(relativePath, maxDepth);
-      const { description, author } = await extractJsdoc(filePath);
-      const row: any = { ...pathLevels, FileName: file, Author: author, Description: description, Etc: '' };
-      rows.push(row);
+      rows.push(await getFileRow(basePath, filePath, maxDepth));
     }
   }
 
   return rows;
 }
 
-export async function generateCsvTable(folderPath: string, csvFilePath: string): Promise<void> {
-  const maxDepth = getMaxDepth(folderPath);
+async function getFileRow(basePath: string, filePath: string, maxDepth: number): Promise<string> {
+  const relativePath = path.relative(basePath, filePath);
+  const pathLevels = getPathLevels(relativePath);
+  const docs = await extractJsdoc(filePath);
 
-  let header = [
-    { id: 'FileName', title: 'File Name' },
-    { id: 'Author', title: 'Author' },
-    { id: 'Description', title: 'Description' },
-    { id: 'Etc', title: 'Etc' },
-  ];
-  
-  if (maxDepth > 0) {
-    header = Array.from({ length: maxDepth }, (_, i) => ({ id: `Path${i + 1}`, title: `Path${i + 1}` }))
-      .concat(header);
+  // 파일명만 추출
+  const fileName = path.basename(filePath);
+
+  // docs.map을 실행할 수 있는지 확인 (예: docs가 객체가 아닌 배열일 때)
+  const docValues = Array.isArray(docs) ? docs.map(col => col.value) : Object.values(docs);
+
+  // 경로 레벨 추가
+  const pathColumns = pathLevels
+    .concat(Array.from({ length: maxDepth - pathLevels.length }, () => '-'))
+    .join(', ');
+
+  // CSV 행 구성
+  const rowsArr = [pathColumns, fileName, ...docValues];
+  return rowsArr.join(', ');
+}
+
+function generateCsvHeader(maxDepth: number): string {
+  let header = "";
+  if(maxDepth > 0) {
+    header += Array.from({ length: maxDepth }, (_, i) => `경로${i + 1}`).join(', ') + ', ';
   }
+  const columns = getColumns();
+  header += `파일명, ${columns.map(col => col.title).join(', ')}\n`;
 
-  const csvWriter = createObjectCsvWriter({
-    path: csvFilePath,
-    header: header,
-  });
+  return header;
+}
 
-  const records = await getFileRows(folderPath, folderPath, maxDepth);
+export async function generateCsv(folderPath: string, csvFilePath: string): Promise<void> {
+  const maxDepth = getMaxDepth(folderPath);
+  const csvHeader = generateCsvHeader(maxDepth);
+  const fileRows = await getFileRows(folderPath, folderPath, maxDepth);
+  const csvContent = `${csvHeader}${fileRows.join('\n')}`;
 
-  await csvWriter.writeRecords(records);
+  fs.writeFileSync(csvFilePath, csvContent, 'utf8');
 }

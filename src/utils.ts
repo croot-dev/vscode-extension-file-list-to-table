@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -15,14 +16,26 @@ export function getMaxDepth(folderPath: string): number {
   return getDepth(folderPath);
 }
 
-export async function extractJsdoc(filePath: string): Promise<{description: string, author: string}> {
+export async function extractJsdoc(filePath: string): Promise<Record<string, string>[]> {
   const fileContent = fs.readFileSync(filePath, 'utf-8');
-  const authorMatch = fileContent.match(/@(?:author)[ \t]*:?[ \t]*([^\n\r]+)/);
-  const descriptionMatch = fileContent.match(/@(?:description|desc)[ \t]*:?[ \t]*([^\n\r]+)/);
+  const columns = getColumns();
 
-  return {
-    description:  descriptionMatch ? descriptionMatch[1].trim() : '-',
-    author:  authorMatch ? authorMatch[1].trim() : '-'
-  };
+  let result: Record<string, string>[] = [];
+  if (Array.isArray(columns)) {
+    result = columns.map(({key}) => {
+      const regex = new RegExp(`@(?:${key})[ \\t]*:?[ \\t]*([^\\n\\r]+)`);
+      const match =  fileContent.match(regex);
+      return { key, value: match ? match[1] : '' }
+    });
+  }
+
+  return result;
+}
+
+export function getColumns(): Record<string, string>[] {
+  const config = vscode.workspace.getConfiguration('fileListToTable');
+  const columnsConfig = config.get<Record<string, string>>('columns', {});
+
+  return Object.entries(columnsConfig).map(([key, title]) => ({ key, title}));
 }
   
