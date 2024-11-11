@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { extractJsdoc, getColumns, getMaxDepth } from "./utils";
+import { extractJsdoc, getColumns, getPathName, getMaxDepth } from "./utils";
 
 function getPathLevels(relativePath: string): string[] {
   const parts = relativePath.split(path.sep);
@@ -35,14 +35,13 @@ async function getFileRow(basePath: string, filePath: string, maxDepth: number):
 
   // docs.map을 실행할 수 있는지 확인 (예: docs가 객체가 아닌 배열일 때)
   const docValues = Array.isArray(docs) ? docs.map(col => col.value) : Object.values(docs);
+  debugger
   
   const pathColumns = pathLevels
     .concat(Array.from({ length: maxDepth - pathLevels.length }, () => '-'))
     .map(col => `<td>${col}</td>`)
     .join('');
-    
   const rowsArr = [
-    `<td>${fileName}</td>`,
     ...docValues.map(value => `<td>${value}</td>`),
   ];
   
@@ -56,9 +55,8 @@ async function getFileRow(basePath: string, filePath: string, maxDepth: number):
 function generateTableHeader(maxDepth: number): string {
   let header = '<thead><tr>';
   if (maxDepth > 0) {
-    header += Array.from({ length: maxDepth }, (_, i) => `<th>경로${i + 1}</th>`).join('');
+    header += Array.from({ length: maxDepth }, (_, i) => `<th>${getPathName(i + 1)}</th>`).join('');
   }
-  header += '<th>파일명</th>'
   const columns = getColumns();
   header += columns.map(col => `<th>${col.title}</th>`).join('');
   header += '</tr></thead>\n';

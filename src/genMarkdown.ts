@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { extractJsdoc, getColumns, getMaxDepth } from "./utils";
+import { extractJsdoc, getColumns, getPathName, getMaxDepth } from "./utils";
 
 function getPathLevels(relativePath: string): string[] {
   const parts = relativePath.split(path.sep);
@@ -51,10 +51,10 @@ async function getFileRow(basePath: string, filePath: string, maxDepth: number):
 function generateTableHeader(maxDepth: number): string {
   let header = "";
   if(maxDepth > 0) {
-    header += `| ${Array.from({ length: maxDepth }, (_, i) => `경로${i + 1}`).join(' | ')} `;
+    header += `| ${Array.from({ length: maxDepth }, (_, i) => `${getPathName(i + 1)}`).join(' | ')} `;
   }
   const columns = getColumns();
-  header += `| 파일명 | ${columns.map(col => col.title).join(' | ')} |\n`;
+  header += `| ${columns.map(col => col.title).join(' | ')} |\n`;
   if(maxDepth > 0) {
     header += `| ${Array.from({ length: maxDepth }, () => '--------').join(' | ')} `;
   }

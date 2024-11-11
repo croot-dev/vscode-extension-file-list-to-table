@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import path from 'path';
 import { generateMarkdownTable } from './genMarkdown';
 import { generateCsv } from './genCsv';
-import path from 'path';
 import { generateHtmlTable } from './genHtml';
 
 async function openFile(filePath: string) {

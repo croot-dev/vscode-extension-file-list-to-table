@@ -21,17 +21,29 @@
 4. Click the `Install` button, then the `Enable` button.
 
 ## 🔨 Configuration
+### fileListToTable.filePathLabel
+
+```json
+// settings.json
+"fileListToTable.filePathLabel": "Depth_{0}"
+```
+
+### fileListToTable.fileNameLabel
+
+```json
+// settings.json
+"fileListToTable.fileNameLabel": "File Name"
+```
 
 ### fileListToTable.columns
 JSDoc tag name : header display name
 
-example
 ```json
 // settings.json
 "fileListToTable.columns": {
-    "author": "작성자",
-    "description": "설명",
-    "etc": "기타"
+    "author": "Author",
+    "description": "Description",
+    "etc": "Etc."
 }
 ```
 ```vue
@@ -47,7 +59,7 @@ example
 ```
 ```markdown
 //result
-| 파일명 | 작성자 | 설명 | 기타 |
+| File Name | Author | Description | Etc. |
 | ---------- | ----- | ------------------------ | ------- |
 | sample.vue | Croot | This is sample component | for dev |
 ```

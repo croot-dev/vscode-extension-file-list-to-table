@@ -36,12 +36,20 @@
   "configuration": {
     "title": "File List to Table",
     "properties": {
+      "fileListToTable.filePathLabel": {
+        "type": "string",
+        "default": "Depth_{0}"
+      },
+      "fileListToTable.fileNameLabel": {
+        "type": "string",
+        "default": "File Name"
+      },
       "fileListToTable.columns": {
         "type": "object",
         "default": {
-          "author": "작성자",
-          "description": "설명",
-          "etc": "기타"
+          "author": "Author",
+          "description": "Description",
+          "etc": "Etc."
         },
         "description": "Mapping of JSDoc tags to table column names"
       }

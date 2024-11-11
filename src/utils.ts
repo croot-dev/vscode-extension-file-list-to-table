@@ -32,10 +32,19 @@ export async function extractJsdoc(filePath: string): Promise<Record<string, str
   return result;
 }
 
-export function getColumns(): Record<string, string>[] {
+export function getColumns(): {key: string, title: string }[] {
   const config = vscode.workspace.getConfiguration('fileListToTable');
+  const titleConfig = config.get<string>('fileNameLabel', 'File Name')
   const columnsConfig = config.get<Record<string, string>>('columns', {});
 
-  return Object.entries(columnsConfig).map(([key, title]) => ({ key, title}));
-}
+  return [{ key: 'fileNameLabel', title: titleConfig }]
+    .concat(Object.entries(columnsConfig)
+    .map(([key, title]) => ({ key, title })));
+} 
+
+export function getPathName(depth: number): string {
+  const config = vscode.workspace.getConfiguration('fileListToTable');
+  const titleConfig = config.get<string>('filePathLabel', 'Depth_{0}');
   
+  return titleConfig.replace(/\{0\}/g, depth.toString());
+}
